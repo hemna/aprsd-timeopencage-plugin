@@ -4,7 +4,6 @@ import re
 import pytz
 from aprsd import plugin, plugin_utils
 from aprsd.plugins import time
-from aprsd.utils import trace
 from opencage.geocoder import OpenCageGeocode
 
 import aprsd_timeopencage_plugin
@@ -36,7 +35,6 @@ class TimeOpenCagePlugin(time.TimePlugin, plugin.APRSFIKEYMixin):
         # Do some checks here?
         self.ensure_aprs_fi_key()
 
-    @trace.trace
     def process(self, packet):
         fromcall = packet.get("from")
         message = packet.get("message_text", None)
