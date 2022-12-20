@@ -36,8 +36,8 @@ class TimeOpenCagePlugin(time.TimePlugin, plugin.APRSFIKEYMixin):
         self.ensure_aprs_fi_key()
 
     def process(self, packet):
-        fromcall = packet.get("from")
-        message = packet.get("message_text", None)
+        fromcall = packet.from_call
+        message = packet.message_text
         # ack = packet.get("msgNo", "0")
 
         api_key = self.config["services"]["aprs.fi"]["apiKey"]
