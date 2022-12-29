@@ -2,13 +2,17 @@ import logging
 import re
 
 import pytz
+from aprsd import conf  # noqa
 from aprsd import plugin, plugin_utils
 from aprsd.plugins import time
 from opencage.geocoder import OpenCageGeocode
+from oslo_config import cfg
 
 import aprsd_timeopencage_plugin
+from aprsd_timeopencage_plugin import conf  # noqa
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger("APRSD")
 
 
@@ -18,7 +22,7 @@ class TimeOpenCagePlugin(time.TimePlugin, plugin.APRSFIKEYMixin):
     # Change this regex to match for your plugin's command
     # Tutorial on regex here: https://regexone.com/
     # Look for any command that starts with w or W
-    command_regex = "^[tT]"
+    command_regex = r"^([t]|[t]\s|time)"
     # the command is for ?
     # Change this value to a 1 word description of the plugin
     # this string is used for help
@@ -34,13 +38,16 @@ class TimeOpenCagePlugin(time.TimePlugin, plugin.APRSFIKEYMixin):
         received."""
         # Do some checks here?
         self.ensure_aprs_fi_key()
+        if not CONF.aprsd_timeopencage_plugin.apiKey:
+            LOG.error("Failed to find config aprsd_timeopencage_plugin.apiKey")
+            self.enabled = False
 
     def process(self, packet):
         fromcall = packet.from_call
         message = packet.message_text
         # ack = packet.get("msgNo", "0")
 
-        api_key = self.config["services"]["aprs.fi"]["apiKey"]
+        api_key = CONF.aprs_fi.apiKey
 
         # optional second argument is a callsign to search
         a = re.search(r"^.*\s+(.*)", message)
@@ -65,14 +72,8 @@ class TimeOpenCagePlugin(time.TimePlugin, plugin.APRSFIKEYMixin):
         lat = aprs_data["entries"][0]["lat"]
         lon = aprs_data["entries"][0]["lng"]
 
+        opencage_key = CONF.aprsd_timeopencage_plugin.apiKey
         try:
-            self.config.exists("opencagedata.apiKey")
-        except Exception as ex:
-            LOG.error(f"Failed to find config opencage:apiKey {ex}")
-            return "No opencage apiKey found"
-
-        try:
-            opencage_key = self.config["opencagedata"]["apiKey"]
             geocoder = OpenCageGeocode(opencage_key)
             results = geocoder.reverse_geocode(lat, lon)
         except Exception as ex:
